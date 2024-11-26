@@ -17,5 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: amannn/action-semantic-pull-request@v5
+        with:
+          subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s.+$ # verify subject starts with a valid JIRA issue key
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}" didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space.
+
+            Valid PR title examples:
+              "feat(ui): ABC-123 - Fix something"
+              "chore: ABC-456 - Update docs"
+              "BREAKING CHANGE: ABC-789 - Do something"
+              "fix!: DEF-865 - Fire ze missiles"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
