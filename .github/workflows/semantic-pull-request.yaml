@@ -23,9 +23,8 @@ jobs:
         with:
           subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s.+$
           subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            didn't match the configured pattern. Please ensure that the subject
-            doesn't start with an uppercase character.
+            The subject "{subject}" found in the pull request title "{title}" didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space. Example: "ABC-123 - Fix something"
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 # asdf
