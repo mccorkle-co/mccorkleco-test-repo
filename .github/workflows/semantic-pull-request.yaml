@@ -9,7 +9,7 @@ on:
       - reopened
 
 permissions:
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   main:
@@ -29,3 +29,18 @@ jobs:
           #     "fix!: DEF-865 - Fire ze missiles"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and push tag
+        id: version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+
+      - name: Add PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            :robot: This PR has been validated.
+            Current version: ${{ steps.version.outputs.previous_tag }}
+            Next version: ${{ steps.version.outputs.new_tag }}.
