@@ -43,4 +43,6 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            :robot: This PR has been validated. The version will be bumped to ${{ steps.version.outputs.new_tag }}.
+            :robot: This PR has been validated.
+            Current version: ${{ steps.version.outputs.previous_tag }}
+            Next version: ${{ steps.version.outputs.new_tag }}.
