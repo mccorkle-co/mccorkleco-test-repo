@@ -1,6 +1,8 @@
 name: "Lint PR"
 
 on:
+  pull_request:
+    branches: main
   pull_request_target:
     types:
       - opened
@@ -29,3 +31,16 @@ jobs:
           #     "fix!: DEF-865 - Fire ze missiles"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and push tag
+        id: version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+
+      - name: Add PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            :robot: This PR has been validated. The version will be bumped to ${{ steps.version.outputs.new_tag }}.
