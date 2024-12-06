@@ -1,11 +1,14 @@
 name: Semantic Release
 on:
-  pull_request_target:
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
+  # pull_request_target:
+  #   types:
+  #     - opened
+  #     - edited
+  #     - synchronize
+  #     - reopened
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
