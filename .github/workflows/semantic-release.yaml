@@ -1,34 +1,73 @@
 name: Bump version
 on:
+  pull_request:
+    branches: main
+
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
   push:
     branches:
       - main
 jobs:
-  build:
+  semantic-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Get token
-        uses: actions/create-github-app-token@v1
-        id: token
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-
       - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.token.outputs.token }}
+
+      - id: is-main
+        shell: pwsh
+        run: |
+          value=${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
+          echo "branch is main: $value"
+          echo "value=$value" >> $GITHUB_OUTPUT
+
+      - name: Lint PR Title
+        uses: amannn/action-semantic-pull-request@v5
+        # with:
+          # subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s.+$ # verify subject starts with a valid JIRA issue key
+          # subjectPatternError: |
+          #   The subject "{subject}" found in the pull request title "{title}" didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space.
+
+          #   Valid PR title examples:
+          #     "feat(ui): ABC-123 - Fix something"
+          #     "chore: ABC-456 - Update docs"
+          #     "BREAKING CHANGE: ABC-789 - Do something"
+          #     "fix!: DEF-865 - Fire ze missiles"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump version and push tag
-        id: tag_version
+        id: version
         uses: mathieudutour/github-tag-action@v6.2
         with:
-          # github_token: ${{ secrets.GITHUB_TOKEN }}
-          github_token: ${{ steps.token.outputs.token }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: ${{ steps.is-main.outputs.value == 'false'}}
+
+      - name: Add PR comment
+        if: steps.is-main.outputs.value == 'false'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+          message: |
+            :robot: This PR has been validated.
+            Current version: ${{ steps.version.outputs.previous_tag }}
+            Next version: ${{ steps.version.outputs.new_tag }}.
+
+      - name: Bump version and push tag
+        uses: mathieudutour/github-tag-action@v6.2
+        if: steps.is-main.outputs.value == 'true'
+        id: tag-version
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
+        if: steps.is-main.outputs.value == 'true'
         with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
-          token: ${{ steps.token.outputs.token }}
+          tag: ${{ steps.tag-version.outputs.new_tag }}
+          name: Release ${{ steps.tag-version.outputs.new_tag }}
+          body: ${{ steps.tag-version.outputs.changelog }}
