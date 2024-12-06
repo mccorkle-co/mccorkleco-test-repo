@@ -42,7 +42,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: ${{ steps.is-main.outputs.value == 'false' && 'Getting next version' || 'Bump version and push tag' }}
+      - name: ${{ steps.is-main.outputs.value == 'false' && 'Get next version' || 'Bump version and push tag' }}
         uses: mathieudutour/github-tag-action@v6.2
         id: version
         with:
