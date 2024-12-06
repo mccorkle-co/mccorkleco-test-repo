@@ -18,8 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: is-main
-        shell: pwsh
+      - name: Check if main branch
+        id: is-main
         run: |
           value=${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
           echo "branch is main: $value"
