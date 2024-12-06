@@ -51,7 +51,6 @@ jobs:
         if: steps.is-main.outputs.value == 'false'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
           message: |
             :robot: This PR has been validated.
             Current version: ${{ steps.version.outputs.previous_tag }}
