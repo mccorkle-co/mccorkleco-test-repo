@@ -47,7 +47,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: ${{ steps.is-main.outputs.value == 'false'}}
 
-      - name: Add PR comment
+      - name: Add comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
         if: steps.is-main.outputs.value == 'false'
         with:
@@ -55,13 +55,6 @@ jobs:
             :robot: This PR has been validated.
             Current version: ${{ steps.version.outputs.previous_tag }}
             Next version: ${{ steps.version.outputs.new_tag }}.
-
-      - name: Bump version and push tag
-        uses: mathieudutour/github-tag-action@v6.2
-        if: steps.is-main.outputs.value == 'true'
-        id: tag-version
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
