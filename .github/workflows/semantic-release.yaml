@@ -1,4 +1,4 @@
-name: Bump version
+name: Semantic Release
 on:
   pull_request:
     branches: main
@@ -21,7 +21,7 @@ jobs:
       - name: Check if main branch
         id: is-main
         run: |
-          value=${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
+          value=${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
           echo "branch is main: $value"
           echo "value=$value" >> $GITHUB_OUTPUT
 
