@@ -62,6 +62,6 @@ jobs:
         uses: ncipollo/release-action@v1
         if: steps.is-main.outputs.value == 'true'
         with:
-          tag: ${{ steps.tag-version.outputs.new_tag }}
-          name: Release ${{ steps.tag-version.outputs.new_tag }}
-          body: ${{ steps.tag-version.outputs.changelog }}
+          tag: ${{ steps.version.outputs.new_tag }}
+          name: Release ${{ steps.version.outputs.new_tag }}
+          body: ${{ steps.version.outputs.changelog }}
