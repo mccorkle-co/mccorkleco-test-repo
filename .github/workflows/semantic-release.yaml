@@ -20,36 +20,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses:  ytanikin/pr-conventional-commits@1.4.0
+      # Only checks the PR title. Does nothing else. amannn/action-semantic-pull-request is a better action
+      # - uses:  ytanikin/pr-conventional-commits@1.4.0
+      #   with:
+      #     task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
+      #     add_label: 'false'
+
+      - name: Check if main branch
+        id: is-main
+        run: |
+          value=${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
+          echo "branch is main: $value"
+          echo "value=$value" >> $GITHUB_OUTPUT
+
+          # This supports conventional commits
+          # BREAKING CHANGE <= doesn't work since it would need to be in the commit footer
+          # must use "feat(something)!" instead
+      - name: Lint PR Title
+        uses: amannn/action-semantic-pull-request@v5
+        if: steps.is-main.outputs.value == 'false'
+        id: pr-lint
         with:
-          task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
-          add_label: 'false'
+          subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s(.+)$ # verify subject starts with a valid JIRA issue key
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}" didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space.
 
-      # - name: Check if main branch
-      #   id: is-main
-      #   run: |
-      #     value=${{ github.ref == 'refs/heads/main' && 'true' || 'false' }}
-      #     echo "branch is main: $value"
-      #     echo "value=$value" >> $GITHUB_OUTPUT
+            Valid PR title examples:
+              "feat(ui): ABC-123 - Fix something"
+              "chore: ABC-456 - Update docs"
+              "fix!: DEF-865 - Fire ze missiles"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      #     # This supports conventional commits
-      #     # BREAKING CHANGE <= doesn't work since it would need to be in the commit footer
-      #     # must use "feat(something)!" instead
-      # - name: Lint PR Title
-      #   uses: amannn/action-semantic-pull-request@v5
-      #   if: steps.is-main.outputs.value == 'false'
-      #   # with:
-      #     # subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s.+$ # verify subject starts with a valid JIRA issue key
-      #     # subjectPatternError: |
-      #     #   The subject "{subject}" found in the pull request title "{title}" didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space.
-
-      #     #   Valid PR title examples:
-      #     #     "feat(ui): ABC-123 - Fix something"
-      #     #     "chore: ABC-456 - Update docs"
-      #     #     "fix!: DEF-865 - Fire ze missiles"
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      - name: Get outputs
+        run: |
+          echo "type: ${{ steps.pr-lint.outputs.type }}"
+          echo "scope: ${{ steps.pr-lint.outputs.scope }}"
+          echo "subject: ${{ steps.pr-lint.outputs.subject }}"
+          echo "error_message: ${{ steps.pr-lint.outputs.error_message }}"
       #     # This supports angular commits
       #     # feat(ui)! <= exclamation doesn't work
       # - name: ${{ steps.is-main.outputs.value == 'false' && 'Get next version' || 'Bump version and push tag' }}
