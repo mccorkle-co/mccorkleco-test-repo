@@ -52,17 +52,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get outputs
-        if: always()
-        run: |
-          echo 'type: ${{ steps.pr-lint.outputs.type }}'
-          echo 'scope: ${{ steps.pr-lint.outputs.scope }}'
-          echo 'subject: ${{ steps.pr-lint.outputs.subject }}'
-          echo 'error_message: ${{ steps.pr-lint.outputs.error_message }}'
-
+      # Add a comment to the PR if the title is not valid
       - uses: marocchino/sticky-pull-request-comment@v2
-        # When the previous steps fails, the workflow would stop. By adding this
-        # condition you can continue the execution with the populated error message.
         if: always() && (steps.pr-lint.outputs.error_message != null)
         with:
           header: pr-title-lint-error
@@ -70,25 +61,26 @@ jobs:
             We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted.
 
             Details:
-
             ```
             ${{ steps.pr-lint.outputs.error_message }}
             ```
 
-      # Delete a previous comment when the issue has been resolved
+      # Delete the comment if the title is valid
       - if: ${{ steps.pr-lint.outputs.error_message == null }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: pr-title-lint-error
           delete: true
-      #     # This supports angular commits
-      #     # feat(ui)! <= exclamation doesn't work
-      # - name: ${{ steps.is-main.outputs.value == 'false' && 'Get next version' || 'Bump version and push tag' }}
-      #   uses: mathieudutour/github-tag-action@v6.2
-      #   id: version
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     dry_run: ${{ steps.is-main.outputs.value == 'false'}}
+
+          # This supports angular commits
+          # feat(ui)! <= exclamation doesn't work
+      - name: ${{ steps.is-main.outputs.value == 'false' && 'Get next version' || 'Bump version and push tag' }}
+        # uses: mathieudutour/github-tag-action@v6.2
+        uses:  mccorkle-co/github-tag-action@conventional-commit
+        id: version
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: ${{ steps.is-main.outputs.value == 'false'}}
 
       # - name: Add comment on PR
       #   uses: marocchino/sticky-pull-request-comment@v2
