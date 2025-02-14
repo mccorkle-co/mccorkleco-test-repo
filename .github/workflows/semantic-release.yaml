@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened, edited]
   push:
     branches:
       - main
@@ -20,6 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Only checks the PR title. Does nothing else. amannn/action-semantic-pull-request is a better action
+      # - uses:  ytanikin/pr-conventional-commits@1.4.0
+      #   with:
+      #     task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
+      #     add_label: 'false'
+
       - name: Check if main branch
         id: is-main
         run: |
@@ -27,42 +34,68 @@ jobs:
           echo "branch is main: $value"
           echo "value=$value" >> $GITHUB_OUTPUT
 
+          # This supports conventional commits
+          # BREAKING CHANGE <= doesn't work since it would need to be in the commit footer
+          # must use "feat(something)!" instead
       - name: Lint PR Title
         uses: amannn/action-semantic-pull-request@v5
         if: steps.is-main.outputs.value == 'false'
-        # with:
-          # subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s.+$ # verify subject starts with a valid JIRA issue key
-          # subjectPatternError: |
-          #   The subject "{subject}" found in the pull request title "{title}" didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space.
+        id: pr-lint
+        with:
+          subjectPattern: ^((?<!([A-Z]{1,10})-?)[A-Z]+-\d+)\s-\s(.+)$ # verify subject starts with a valid JIRA issue key
+          subjectPatternError: |
+            The subject found in the pull request title didn't match the configured pattern. Please ensure that the subject starts with a JIRA issue key followed by a space, hyphen, and a space.
 
-          #   Valid PR title examples:
-          #     "feat(ui): ABC-123 - Fix something"
-          #     "chore: ABC-456 - Update docs"
-          #     "BREAKING CHANGE: ABC-789 - Do something"
-          #     "fix!: DEF-865 - Fire ze missiles"
+            Examples:
+              feat(ui): ABC-123 - Fix something
+              chore: ABC-456 - Update docs
+              fix!: DEF-865 - Fire ze missiles
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Add a comment to the PR if the title is not valid
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: always() && (steps.pr-lint.outputs.error_message != null)
+        with:
+          header: pr-title-lint-error
+          message: |
+            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted.
+
+            Details:
+            ```
+            ${{ steps.pr-lint.outputs.error_message }}
+            ```
+
+      # Delete the comment if the title is valid
+      - if: ${{ steps.pr-lint.outputs.error_message == null }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-error
+          delete: true
+
+          # This supports angular commits
+          # feat(ui)! <= exclamation doesn't work
       - name: ${{ steps.is-main.outputs.value == 'false' && 'Get next version' || 'Bump version and push tag' }}
-        uses: mathieudutour/github-tag-action@v6.2
+        # uses: mathieudutour/github-tag-action@v6.2
+        uses:  mccorkle-co/github-tag-action@conventional-commit
         id: version
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: ${{ steps.is-main.outputs.value == 'false'}}
 
-      - name: Add comment on PR
-        uses: marocchino/sticky-pull-request-comment@v2
-        if: steps.is-main.outputs.value == 'false'
-        with:
-          message: |
-            :robot: This PR has been validated.
-            Current version: ${{ steps.version.outputs.previous_tag }}
-            Next version: ${{ steps.version.outputs.new_tag }}.
+      # - name: Add comment on PR
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   if: steps.is-main.outputs.value == 'false'
+      #   with:
+      #     message: |
+      #       :robot: This PR has been validated.
+      #       Current version: ${{ steps.version.outputs.previous_tag }}
+      #       Next version: ${{ steps.version.outputs.new_tag }}.
 
-      - name: Create a GitHub release
-        uses: ncipollo/release-action@v1
-        if: steps.is-main.outputs.value == 'true'
-        with:
-          tag: ${{ steps.version.outputs.new_tag }}
-          name: Release ${{ steps.version.outputs.new_tag }}
-          body: ${{ steps.version.outputs.changelog }}
+      # - name: Create a GitHub release
+      #   uses: ncipollo/release-action@v1
+      #   if: steps.is-main.outputs.value == 'true'
+      #   with:
+      #     tag: ${{ steps.version.outputs.new_tag }}
+      #     name: Release ${{ steps.version.outputs.new_tag }}
+      #     body: ${{ steps.version.outputs.changelog }}
